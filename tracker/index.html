@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Build Break Write</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>body{margin:0}
+/* Layout: a lab notebook. One loud "this week" bench up top, then the season as a ruled log. */
+:root{
+  --bg:#F3F5F8; --surface:#FFFFFF; --ink:#152130; --muted:#5B6878; --line:#D9DFE7;
+  --accent:#2747D6; --accent-soft:#E6EBFD; --break:#C2620F; --break-soft:#FBEEDF;
+  --ok:#147A5C; --ok-soft:#DFF3EC; --rest:#7A6FA8; --rest-soft:#EEEBF7;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F151D; --surface:#17202B; --ink:#E6ECF3; --muted:#93A0B0; --line:#2A3644;
+  --accent:#8EA3FF; --accent-soft:#1F2A52; --break:#F0A35E; --break-soft:#3A2817;
+  --ok:#5ED1A8; --ok-soft:#163A2F; --rest:#B7AEE0; --rest-soft:#2A2640; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F151D; --surface:#17202B; --ink:#E6ECF3; --muted:#93A0B0; --line:#2A3644;
+  --accent:#8EA3FF; --accent-soft:#1F2A52; --break:#F0A35E; --break-soft:#3A2817;
+  --ok:#5ED1A8; --ok-soft:#163A2F; --rest:#B7AEE0; --rest-soft:#2A2640; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55}
+.wrap{max-width:980px;margin:0 auto;padding-block:28px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:36px}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;line-height:1.1}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+/* header */
+header{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-end;justify-content:space-between}
+header h1{font-size:clamp(34px,6vw,56px);font-weight:800;letter-spacing:-.02em}
+header h1 .b{color:var(--accent)} header h1 .k{color:var(--break)} header h1 .w{color:var(--ok)}
+.sub{color:var(--muted);margin-top:8px;max-width:52ch}
+.stats{display:flex;gap:24px;flex-wrap:wrap}
+.stat .n{font-family:var(--f-display);font-size:36px;font-weight:700;line-height:1}
+.stat .l{font-size:12px;color:var(--muted);font-family:var(--f-mono);text-transform:uppercase;letter-spacing:.06em}
+#syncNote{font-size:13px;color:var(--muted)}
+/* bench */
+.bench{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px;display:grid;grid-template-columns:1.25fr 1fr;gap:28px}
+@media (max-width:760px){.bench{grid-template-columns:1fr;padding:18px}}
+.bench > *{min-width:0}
+.bench h2{font-size:30px;font-weight:800;margin-top:6px}
+.scenario{margin-top:12px;padding:12px 14px;border-left:3px solid var(--break);background:var(--break-soft);border-radius:0 8px 8px 0}
+.scenario b{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--break);display:block;margin-bottom:2px}
+dl.spec{display:grid;grid-template-columns:110px 1fr;gap:10px 14px;margin:16px 0 0}
+dl.spec dt{font-family:var(--f-mono);font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding-top:2px}
+dl.spec dd{margin:0}
+@media (max-width:480px){dl.spec{grid-template-columns:1fr;gap:2px}dl.spec dd{margin-bottom:10px}}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--f-mono);font-size:12px;padding:3px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
+/* checklist */
+.loop{display:flex;flex-direction:column;gap:10px}
+.step{display:grid;grid-template-columns:28px 1fr;gap:12px;align-items:start;padding:12px;border:1px solid var(--line);border-radius:10px;cursor:pointer;background:var(--bg)}
+.step:hover{border-color:var(--accent)}
+.step input{appearance:none;width:24px;height:24px;border:2px solid var(--muted);border-radius:6px;margin:0;display:grid;place-items:center;cursor:pointer;background:var(--surface)}
+.step input:checked{background:var(--ok);border-color:var(--ok)}
+.step input:checked::after{content:"";width:6px;height:11px;border:solid var(--surface);border-width:0 3px 3px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.step input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.step .t{font-weight:600}
+.step .d{font-size:13px;color:var(--muted)}
+.step.done .t{text-decoration:line-through;text-decoration-color:var(--ok)}
+label.fld{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+input[type=url],input[type=text],textarea{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 11px;width:100%}
+input:focus-visible,textarea:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+textarea{resize:vertical;min-height:70px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+button{font:inherit;font-weight:600;border-radius:8px;padding:9px 14px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+button.min{border-color:var(--rest);color:var(--rest)}
+button.min[aria-pressed="true"]{background:var(--rest-soft)}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.saved{font-size:12px;color:var(--muted);font-family:var(--f-mono)}
+/* rhythm */
+.rhythm{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.day{padding:10px 8px;border-radius:8px;background:var(--surface);border:1px solid var(--line);min-width:0}
+.day .dn{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.day .dt{font-weight:600;font-size:13px}
+.day .dh{font-size:12px;color:var(--muted)}
+.day.today{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.day.brk .dt{color:var(--break)} .day.wr .dt{color:var(--ok)}
+@media (max-width:640px){.rhythm{grid-template-columns:1fr 1fr}}
+.minbox{margin-top:10px;font-size:13px;color:var(--muted)}
+/* log */
+section > h2{font-size:24px;font-weight:700;margin-bottom:6px}
+section > p.lead{color:var(--muted);margin:0 0 14px}
+.season{display:flex;flex-direction:column;border-top:2px solid var(--ink)}
+.season + .season{margin-top:22px}
+.shead{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--line)}
+.shead h3{font-size:18px}
+details.wk{border-bottom:1px solid var(--line)}
+details.wk summary{list-style:none;display:grid;grid-template-columns:62px 110px 1fr auto;gap:12px;align-items:center;padding:12px 4px;cursor:pointer}
+details.wk summary::-webkit-details-marker{display:none}
+details.wk summary:hover{background:var(--surface)}
+details.wk.current summary{background:var(--accent-soft)}
+.wid{font-family:var(--f-mono);font-weight:600;color:var(--accent)}
+.wdate{font-family:var(--f-mono);font-size:13px;color:var(--muted)}
+.wname{font-weight:600;min-width:0} .wname small{display:block;font-weight:400;color:var(--muted);font-size:13px}
+.pill{font-family:var(--f-mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.p-todo{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.p-doing{background:var(--accent-soft);color:var(--accent)}
+.p-done{background:var(--ok-soft);color:var(--ok)}
+.p-min{background:var(--rest-soft);color:var(--rest)}
+.p-rest{background:var(--rest-soft);color:var(--rest)}
+.p-missed{background:var(--break-soft);color:var(--break)}
+.wbody{padding:6px 4px 20px 74px}
+@media (max-width:640px){details.wk summary{grid-template-columns:44px 1fr auto}.wdate{display:none}.wbody{padding-left:4px}}
+.rest-row{padding:14px 4px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:62px 110px 1fr auto;gap:12px;align-items:center;background:repeating-linear-gradient(135deg,transparent 0 10px,var(--rest-soft) 10px 11px)}
+@media (max-width:640px){.rest-row{grid-template-columns:44px 1fr auto}.rest-row .wdate{display:none}}
+/* ideas */
+.ideas{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+@media (max-width:760px){.ideas{grid-template-columns:1fr}}
+.ideas > *{min-width:0}
+.formula{font-family:var(--f-display);font-size:20px;font-weight:700;line-height:1.3}
+.formula span{color:var(--break)}
+form.idea{display:flex;flex-direction:column;gap:10px}
+ul.ilist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+ul.ilist li{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start}
+ul.ilist li .it{font-weight:600} ul.ilist li .is{font-size:13px;color:var(--muted)}
+ul.ilist li .is.warn{color:var(--break)}
+ul.ilist button{padding:4px 8px;font-size:12px}
+.empty{color:var(--muted);font-size:14px;padding:12px;border:1px dashed var(--line);border-radius:10px}
+footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:14px}
+@media (prefers-reduced-motion:no-preference){.step,details.wk summary{transition:background .15s,border-color .15s}}
+
+.ev{display:grid;grid-template-columns:28px 1fr;gap:12px;align-items:start;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.ev .box{width:24px;height:24px;border:2px solid var(--muted);border-radius:6px;display:grid;place-items:center;background:var(--surface)}
+.ev.on .box{background:var(--ok);border-color:var(--ok)}
+.ev.on .box::after{content:"";width:6px;height:11px;border:solid var(--surface);border-width:0 3px 3px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.ev.on .t{text-decoration:line-through;text-decoration-color:var(--ok)}
+.ev code,.how code{font-family:var(--f-mono);font-size:12px;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:1px 5px;overflow-wrap:anywhere}
+.broke{padding:12px 14px;border-radius:10px;background:var(--ok-soft)}
+.broke b{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ok);display:block}
+a{color:var(--accent)}
+.how{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+.how ol{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+</style>
+<script src="data.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">System design in public · Vibs</div>
+      <h1><span class="b">Build.</span> <span class="k">Break.</span> <span class="w">Write.</span></h1>
+      <p class="sub">One small app a week, one nasty scenario, one number to hit. This page updates itself from the repo: do the work, push, and it ticks.</p>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="n mono" id="streak">0</div><div class="l">Week streak</div></div>
+      <div class="stat"><div class="n mono" id="shipped">0</div><div class="l">Posts shipped</div></div>
+      <div class="stat"><div class="n mono" id="checkin">Sat</div><div class="l">Next check-in</div></div>
+    </div>
+  </header>
+  <div id="syncNote"></div>
+  <section><div class="bench" id="bench"></div></section>
+  <section aria-labelledby="rhythmTitle">
+    <h2 id="rhythmTitle">The weekly rhythm</h2>
+    <p class="lead">10 to 12 hours. Sunday is off.</p>
+    <div class="rhythm" id="rhythm"></div>
+    <p class="minbox"><b>Minimum week (3 h):</b> set <code>minimum: true</code> in the week's README, write one diagram and one short post. It keeps the streak alive.</p>
+  </section>
+  <section aria-labelledby="logTitle">
+    <h2 id="logTitle">The seasons</h2>
+    <p class="lead">Open any week to see its scope and what the repo shows so far.</p>
+    <div id="log"></div>
+  </section>
+  <section aria-labelledby="ideasTitle">
+    <h2 id="ideasTitle">Idea inbox</h2>
+    <p class="lead">Add a line to <code>ideas.md</code>: <code>- **App** — the stressful scenario</code></p>
+    <div class="ideas">
+      <div><p class="formula">A familiar app <span>+</span> a stressful scenario <span>+</span> one number to hit.</p>
+      <p style="color:var(--muted)">If you can't name the stressful scenario, the idea won't teach you much system design.</p></div>
+      <div><ul class="ilist" id="ideaList"></ul></div>
+    </div>
+  </section>
+  <section class="how" aria-labelledby="howTitle">
+    <h2 id="howTitle" style="font-size:20px">How this page updates</h2>
+    <ol>
+      <li><code>npm run week -- w01</code> creates the week's folder from the template.</li>
+      <li><b>Design</b> ticks when <code>design.md</code> no longer has its todo line.</li>
+      <li><b>Build</b> ticks when <code>src/</code> has code in it.</li>
+      <li><b>Break it</b> ticks when <code>break-it.md</code> no longer has its todo line. Its "What broke" line shows here.</li>
+      <li><b>Publish</b> ticks when <code>post/index.md</code> says <code>published: true</code>.</li>
+      <li>Push to GitHub and the page rebuilds. Locally, run <code>npm run tracker</code> and refresh.</li>
+    </ol>
+  </section>
+  <footer>Check-ins run every Saturday at 15:00 and read this repo. After the move in mid-January they switch to India time.</footer>
+</div>
+<script>
+const T=window.TRACKER;
+const $=s=>document.querySelector(s);
+if(!T){document.querySelector(".wrap").innerHTML='<div class="how"><h2>No progress data yet</h2><p>Run <code>npm run tracker</code> in the repo, then refresh this page.</p></div>';throw new Error("no data")}
+const WEEKS=T.plan, P=T.weeks;
+const STEPS=[
+ {k:"design",t:"Design it",d:"Mon",f:"design.md"},
+ {k:"build",t:"Build the core",d:"Tue–Thu",f:"src/"},
+ {k:"break",t:"Break it",d:"Fri",f:"break-it.md"},
+ {k:"post",t:"Write and publish",d:"Sat",f:"post/index.md → published: true"}];
+const DAYS=[["Mon","Design","1.5 h"],["Tue","Build","2 h"],["Wed","Build","2 h"],["Thu","Build","2 h"],["Fri","Break it","2 h"],["Sat","Write","2 h"],["Sun","Off","—"]];
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const d=s=>new Date(s+"T00:00:00");
+const today=()=>{const t=new Date();t.setHours(0,0,0,0);return t};
+const fmt=s=>d(s).toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+function currentWeek(){const t=today();return WEEKS.find(w=>t>=d(w.start)&&t<=d(w.end))||WEEKS.find(w=>d(w.start)>t)||WEEKS[WEEKS.length-1]}
+const st=id=>P[id]||{};
+const counted=id=>!!(st(id).post||st(id).minimum);
+function statusOf(w){
+  if(w.rest)return"rest";const s=st(w.id),t=today();
+  if(s.minimum&&s.post)return"min";
+  if(STEPS.every(x=>s[x.k]))return"done";
+  if(d(w.end)<t)return counted(w.id)?(s.minimum?"min":"done"):"missed";
+  if(s.minimum)return"min";
+  if(d(w.start)<=t||s.started)return"doing";
+  return"todo"}
+const PILL={todo:"Upcoming",doing:"In progress",done:"Shipped",min:"Minimum week",rest:"Rest",missed:"Missed"};
+function stats(){
+  const t=today(),cur=currentWeek(),real=WEEKS.filter(w=>!w.rest);let streak=0;
+  for(let i=real.length-1;i>=0;i--){const w=real[i];if(d(w.start)>t)continue;if(w===cur&&!counted(w.id))continue;if(counted(w.id))streak++;else break}
+  $("#streak").textContent=streak;
+  $("#shipped").textContent=real.filter(w=>st(w.id).post).length;
+  const n=new Date(),sat=new Date(n);sat.setDate(n.getDate()+((6-n.getDay()+7)%7));sat.setHours(15,0,0,0);if(sat<n)sat.setDate(sat.getDate()+7);
+  $("#checkin").textContent=sat.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"});
+  $("#syncNote").textContent="Read from the repo "+new Date(T.generatedAt).toLocaleString("en-GB",{dateStyle:"medium",timeStyle:"short"})+".";
+}
+function evidence(w){
+  const s=st(w.id);
+  return `<div class="loop">${STEPS.map(x=>`<div class="ev ${s[x.k]?"on":""}"><span class="box" aria-hidden="true"></span><span><span class="t">${x.t}</span> <span class="d">· ${x.d}</span><span class="d" style="display:block">${s[x.k]?"Done":"Waiting for"} <code>weeks/${esc(w.folder)}/${esc(x.f)}</code></span></span></div>`).join("")}
+  ${s.note?`<div class="broke"><b>What broke</b>${esc(s.note)}</div>`:""}
+  ${s.postUrl?`<a href="${esc(s.postUrl)}" target="_blank" rel="noopener">Read the post</a>`:""}
+  ${!s.started?`<p class="d" style="color:var(--muted);margin:0">Start with <code>npm run week -- ${esc(w.id)}</code></p>`:""}</div>`}
+function spec(w){
+  return `<div class="scenario"><b>The scenario</b>${esc(w.scenario)}</div><dl class="spec">
+  <dt>Core (6 h)</dt><dd>${esc(w.core)}</dd><dt>Break it</dt><dd>${esc(w.breakIt)}</dd>
+  <dt>Post title</dt><dd><i>${esc(w.post)}</i></dd><dt>Read</dt><dd>${esc(w.read)}</dd>
+  <dt>Concepts</dt><dd><div class="chips">${w.concepts.map(c=>`<span class="chip">${esc(c)}</span>`).join("")}</div></dd></dl>`}
+function renderBench(){
+  const w=currentWeek();
+  if(w.rest){$("#bench").innerHTML=`<div><div class="eyebrow">Rest period · ${fmt(w.start)} – ${fmt(w.end)}</div><h2>${esc(w.name)}</h2><p>${esc(w.tag)}</p></div><div></div>`;return}
+  const s=statusOf(w);
+  $("#bench").innerHTML=`<div><div class="eyebrow">This week · Season ${w.season} · ${esc(w.label)} · ${fmt(w.start)} – ${fmt(w.end)}</div>
+  <h2>${esc(w.name)}</h2><div style="color:var(--muted)">${esc(w.tag)}</div>${spec(w)}</div>
+  <div><div class="row" style="justify-content:space-between;margin-bottom:10px"><span class="eyebrow">This week's loop</span><span class="pill p-${s}">${PILL[s]}</span></div>${evidence(w)}</div>`}
+function renderRhythm(){const idx=(new Date().getDay()+6)%7;
+  $("#rhythm").innerHTML=DAYS.map((x,i)=>`<div class="day ${i===idx?"today":""} ${x[1]==="Break it"?"brk":""} ${x[1]==="Write"?"wr":""}"><div class="dn">${x[0]}</div><div class="dt">${x[1]}</div><div class="dh mono">${x[2]}</div></div>`).join("")}
+function renderLog(){
+  const cur=currentWeek();
+  const groups=[{title:"Season 1 · Foundations and realtime",range:"16 Nov – 20 Dec",items:WEEKS.filter(w=>w.season===1)},{items:WEEKS.filter(w=>w.rest)},{title:"Season 2 · Streaming, consistency and AI",range:"19 Jan – 22 Mar",items:WEEKS.filter(w=>w.season===2)}];
+  $("#log").innerHTML=groups.map(g=>{
+    if(!g.title)return g.items.map(w=>`<div class="rest-row"><span class="wid">—</span><span class="wdate">${fmt(w.start)} – ${fmt(w.end)}</span><span class="wname">${esc(w.name)}<small>${esc(w.tag)}</small></span><span class="pill p-rest">Rest</span></div>`).join("");
+    return `<div class="season"><div class="shead"><h3>${g.title}</h3><span class="wdate">${g.range}</span></div>${g.items.map(w=>{const s=statusOf(w);return `<details class="wk ${w===cur?"current":""}">
+      <summary><span class="wid">${esc(w.label)}</span><span class="wdate">${fmt(w.start)} – ${fmt(w.end)}</span><span class="wname">${esc(w.name)}<small>${esc(w.tag)}</small></span><span class="pill p-${s}">${PILL[s]}</span></summary>
+      <div class="wbody">${spec(w)}<div style="margin-top:16px">${evidence(w)}</div></div></details>`}).join("")}</div>`}).join("")}
+function renderIdeas(){const el=$("#ideaList");
+  if(!T.ideas.length){el.innerHTML='<li class="empty" style="display:block">No ideas yet. Add one to ideas.md.</li>';return}
+  el.innerHTML=T.ideas.map(i=>`<li style="grid-template-columns:1fr"><div><div class="it">${esc(i.title)}</div><div class="is ${i.scenario?"":"warn"}">${i.scenario?esc(i.scenario):"No scenario yet: what would make this hard?"}</div></div></li>`).join("")}
+renderRhythm();renderBench();renderLog();renderIdeas();stats();
+</script>
+</body>
+</html>

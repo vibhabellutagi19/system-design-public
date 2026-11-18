@@ -1,0 +1,9 @@
+{
+  "name": "system-design-public",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "tracker": "node scripts/progress.mjs",
+    "week": "node scripts/new-week.mjs"
+  }
+}
